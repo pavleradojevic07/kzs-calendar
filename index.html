@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Basketball calendar</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#12233b;--bg:#eef1f5;--card:#fff;--line:#d5dbe4;--sen:#f26b21;--u20:#1f9e8f;--mut:#5d6b80}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,sans-serif;padding:0 0 40px}
+header{background:var(--ink);color:#fff;padding:16px 16px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+h1{font:700 26px 'Barlow Condensed',sans-serif;margin:0;letter-spacing:.3px}
+small{color:#9fb0c8}
+button,a.btn{font:inherit;border:0;border-radius:8px;padding:10px 14px;background:var(--sen);color:#fff;font-weight:600;text-decoration:none;cursor:pointer}
+button.alt,a.btn.alt{background:#fff;color:var(--ink);border:1px solid var(--line)}
+button:disabled{opacity:.6}
+main{max-width:640px;margin:0 auto;padding:12px}
+#changes{background:#fff7ef;border:1px solid var(--sen);border-radius:10px;padding:12px;margin-bottom:12px}
+#changes.none{background:#fff;border-color:var(--line)}
+#changes h2{margin:0 0 6px;font:700 20px 'Barlow Condensed'}
+#changes li{margin:4px 0}.old{text-decoration:line-through;color:var(--mut)}
+.bar{display:flex;justify-content:space-between;align-items:center;margin:8px 0}
+.bar h2{font:700 24px 'Barlow Condensed';margin:0}
+.nav button{padding:6px 12px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;background:var(--card);padding:6px;border-radius:10px;border:1px solid var(--line)}
+.dow{font-size:12px;color:var(--mut);text-align:center;padding:4px 0}
+.day{aspect-ratio:1;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer}
+.day.sel{background:var(--ink);color:#fff}.day.today{outline:2px solid var(--ink);outline-offset:-2px}
+.day.off{opacity:.3}.dots{display:flex;gap:3px;height:7px}
+.dot{width:7px;height:7px;border-radius:50%}
+.S{background:var(--sen)}.U{background:var(--u20)}
+.legend{font-size:13px;color:var(--mut);margin:8px 2px}.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin:0 4px 0 10px}
+.game{background:var(--card);border-left:6px solid;border-radius:8px;padding:10px 12px;margin:8px 0;border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.game.S{border-left-color:var(--sen)}.game.U{border-left-color:var(--u20)}
+.game b{font-size:16px}.game .m{color:var(--mut);font-size:13px}.score{font:700 20px 'Barlow Condensed';float:right}
+h3{font:700 20px 'Barlow Condensed';margin:16px 0 0}
+.exp{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+#toast{position:fixed;left:12px;right:12px;bottom:14px;background:var(--ink);color:#fff;padding:12px;border-radius:10px;display:none}
+</style></head><body>
+<header><div><h1>Basketball calendar</h1><small id="last">Not refreshed yet</small></div>
+<button id="go">Check for updates</button></header>
+<main id="cap">
+<div id="changes" class="none" hidden></div>
+<div class="bar"><h2 id="mon"></h2><div class="nav"><button class="alt" id="prev">‹</button> <button class="alt" id="next">›</button></div></div>
+<div class="grid" id="grid"></div>
+<div class="legend"><i class="dot S" style="background:var(--sen)"></i>Senior<i class="dot U" style="background:var(--u20)"></i>U20</div>
+<h3 id="dayT"></h3><div id="dayL"></div>
+<h3>Upcoming</h3><div id="up"></div>
+<h3>Recent results</h3><div id="past"></div>
+</main>
+<main><div class="exp">
+<a class="btn alt" href="/calendar.ics">Add to phone calendar (.ics)</a>
+<button class="alt" id="png">Save image</button><button class="alt" id="pdf">Save PDF</button></div></main>
+<div id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let S={games:[]},view=new Date(),sel=iso(new Date());
+function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+const cls=g=>g.team==='Senior'?'S':'U';
+const fmt=d=>new Date(d+'T00:00').toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const card=g=>`<div class="game ${cls(g)}"><span class="score">${esc(g.score)}</span><b>${esc(g.title)}</b><div class="m">${g.team} · ${fmt(g.date)} ${g.time}</div></div>`;
+function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',5000)}
+function changes(c){
+  const box=$('changes');if(!c){box.hidden=true;return}
+  box.hidden=false;const n=c.added.length+c.removed.length+c.changed.length;
+  box.className=n?'':'none';
+  let h=`<h2>${c.first_run?'First load':n?'What changed':'No changes'}</h2>`;
+  if(c.first_run)h+=`<div>${c.added.length} games loaded.</div>`;
+  else if(!n)h+='<div>Nothing new since the last check.</div>';
+  else{h+='<ul>';
+    c.added.forEach(g=>h+=`<li><b>New:</b> ${esc(g.team)} – ${esc(g.title)}, ${fmt(g.date)} ${g.time}</li>`);
+    c.removed.forEach(g=>h+=`<li><b>Removed:</b> ${esc(g.team)} – ${esc(g.title)}, ${fmt(g.date)}</li>`);
+    c.changed.forEach(x=>h+=`<li><b>${esc(x.game.team)} – ${esc(x.game.title)}:</b> `+Object.entries(x.changes).map(([f,[a,b]])=>`${f} <span class="old">${esc(a||'–')}</span> → ${esc(b||'–')}`).join('; ')+'</li>');
+    h+='</ul>'}
+  if(c.errors&&c.errors.length)h+=`<div class="m">Could not load: ${esc(c.errors.join('; '))}</div>`;
+  box.innerHTML=h}
+function draw(){
+  const y=view.getFullYear(),m=view.getMonth();
+  $('mon').textContent=view.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  const first=new Date(y,m,1),start=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate();
+  let h=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<div class="dow">${d}</div>`).join('');
+  for(let i=0;i<start;i++)h+='<div></div>';
+  for(let d=1;d<=days;d++){const k=iso(new Date(y,m,d)),gs=S.games.filter(g=>g.date===k);
+    h+=`<div class="day ${k===sel?'sel':''} ${k===iso(new Date())?'today':''}" data-d="${k}">${d}<div class="dots">${gs.map(g=>`<span class="dot ${cls(g)}"></span>`).join('')}</div></div>`}
+  $('grid').innerHTML=h;
+  document.querySelectorAll('.day').forEach(e=>e.onclick=()=>{sel=e.dataset.d;draw()});
+  const dg=S.games.filter(g=>g.date===sel);
+  $('dayT').textContent=fmt(sel);$('dayL').innerHTML=dg.map(card).join('')||'<div class="m">No games.</div>';
+  const t=iso(new Date()),by=(a,b)=>(a.date+a.time).localeCompare(b.date+b.time);
+  $('up').innerHTML=S.games.filter(g=>g.date>=t).sort(by).map(card).join('')||'<div class="m">None.</div>';
+  $('past').innerHTML=S.games.filter(g=>g.date<t).sort((a,b)=>by(b,a)).slice(0,8).map(card).join('')||'<div class="m">None.</div>'}
+function load(s){S=s;$('last').textContent=s.last_refresh?'Updated '+new Date(s.last_refresh).toLocaleString():'Not refreshed yet';changes(s.last_changes);draw()}
+$('prev').onclick=()=>{view.setMonth(view.getMonth()-1);draw()};
+$('next').onclick=()=>{view.setMonth(view.getMonth()+1);draw()};
+$('go').onclick=async()=>{
+  if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
+  const b=$('go');b.disabled=true;b.textContent='Checking…';
+  try{const r=await fetch('/api/refresh',{method:'POST'});const s=await r.json();
+    if(s.error)throw new Error(s.error);load(s);
+    const c=s.last_changes,n=c.added.length+c.removed.length+c.changed.length;
+    const msg=c.first_run?`${c.added.length} games loaded`:n?`${n} update${n>1?'s':''} found`:'No changes';
+    toast(msg);if(n&&!c.first_run&&Notification.permission==='granted')new Notification('Basketball calendar',{body:msg});
+  }catch(e){toast('Update failed: '+e.message)}
+  b.disabled=false;b.textContent='Check for updates'};
+async function shot(){return html2canvas($('cap'),{backgroundColor:'#eef1f5',scale:2})}
+$('png').onclick=async()=>{const c=await shot(),a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='basketball-calendar.png';a.click()};
+$('pdf').onclick=async()=>{const c=await shot(),{jsPDF}=window.jspdf,w=190,h=c.height*w/c.width,p=new jsPDF('p','mm',h>277?[210,h+20]:'a4');
+  p.addImage(c.toDataURL('image/png'),'PNG',10,10,w,h);p.save('basketball-calendar.pdf')};
+fetch('/api/games').then(r=>r.json()).then(load);
+</script></body></html>
