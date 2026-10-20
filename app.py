@@ -13,6 +13,8 @@ TIME = re.compile(r"\b([01]?\d|2[0-3]):([0-5]\d)\b")
 SCORE = re.compile(r"\b(\d{2,3})\s*[:\-–]\s*(\d{2,3})\b")
 FIELDS = ["date", "time", "score", "details"]
 FOCUS = re.compile(r"portoro[žz]", re.I)          # focus team: Portorož
+ROUND = re.compile(r"(\d+)\s*\.?\s*(?:kolo|krog)|(?:kolo|krog)\s*(\d+)", re.I)
+COMP = re.compile(r"liga|pokal|prvenstvo|ligi", re.I)
 VENUE = re.compile(r"dvoran|športn|sportn|hala|center|\bOŠ\b|šola", re.I)
 
 def load():
@@ -52,6 +54,7 @@ def parse(team, text):
             cur = [l]; blocks.append(cur)
         elif cur is not None and len(cur) < 7:
             cur.append(l)
+    page_comp = next((l for l in lines if COMP.search(l) and not DATE.search(l) and len(l) < 70), "")
     games, seen = [], {}
     for blk in blocks:
         joined = " | ".join(blk)
@@ -62,7 +65,8 @@ def parse(team, text):
         rest = TIME.sub("", DATE.sub("", joined))
         s = SCORE.search(rest)
         score = f"{s.group(1)}:{s.group(2)}" if s else ""
-        title = next((x for x in blk if re.search(r"\s[-–:]\s", DATE.sub("", x)) and not DATE.fullmatch(x)), blk[-1])
+        cands = [x for x in blk if re.search(r"\s[-–:]\s", DATE.sub("", x)) and not DATE.fullmatch(x)]
+        title = next((x for x in cands if FOCUS.search(x)), cands[0] if cands else blk[-1])
         title = re.sub(r"\s+", " ", SCORE.sub("", TIME.sub("", DATE.sub("", title)))).strip(" -|,")
         parts = re.split(r"\s+[-–:]\s+", title, maxsplit=1)
         ha, opp = "", title
@@ -70,11 +74,15 @@ def parse(team, text):
             if FOCUS.search(parts[0]): ha, opp = "H", parts[1]
             elif FOCUS.search(parts[1]): ha, opp = "A", parts[0]
         venue = next((x for x in blk[1:] if VENUE.search(x)), "")
+        rm = ROUND.search(joined)
+        rnd = (rm.group(1) or rm.group(2)) if rm else ""
+        comp = next((x for x in blk if COMP.search(x) and len(x) < 70), page_comp)
         base = f"{team}|{title}"
         seen[base] = seen.get(base, 0) + 1
         games.append({"key": f"{base}|{seen[base]}", "team": team, "title": title,
                       "date": date, "time": time, "score": score, "details": joined,
-                      "ha": ha, "opp": opp.strip(), "venue": venue})
+                      "ha": ha, "opp": opp.strip(), "venue": venue,
+                      "round": rnd, "comp": comp})
     return games
 
 def diff(old, new):
