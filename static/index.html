@@ -120,11 +120,12 @@ function render(){
 function sheet(g){const s=$('sheet'),r=result(g);
   s.innerHTML=`<h3>${ic(g)} ${nm(g.home)} – ${nm(g.away)}</h3><div><span class="pill ${tCls(g.team)}" style="border:1px solid #10203a55">${tName(g.team)}</span> <b>${g.ha==='H'?'HOME game':'AWAY game'}</b>${r?` · <b>${{W:'Win',L:'Loss',D:'Draw'}[r]} ${esc(g.score)}</b>`:''}</div><div>${dfmt(g.date,g.time)}</div>${g.hall?`<div>🏟 ${esc(g.hall)}</div>`:''}${compLine(g)?`<div>🏆 ${esc(compLine(g))}</div>`:''}<div class="m">Home team is listed first.</div><button class="alt" style="margin-top:10px" onclick="this.parentNode.style.display='none'">Close</button>`;s.style.display='block'}
 function renderCheck(){const b=$('check'),c=S.checks||{},is=S.issues||{},ts=Object.keys(c);if(!ts.length){b.hidden=true;return}
-  b.hidden=false;let h='<h2>Data check</h2>';
+  b.hidden=false;let h='<h2>Data check</h2><div class="m" style="margin-bottom:6px">Games are always read from kzs.si. The reference file is only a comparison, so differences below are usually changes made by the league.</div>';
   ts.forEach(t=>{const k=c[t];h+=`<div style="margin-bottom:6px"><b>${tName(t)}</b>: ${k.count} games read (${k.home} home, ${k.away} away)`;
-    if(k.reference!==undefined){const good=k.matched===k.reference&&!k.differences.length&&!k.missing.length;h+=`<br>${good?'✅':'⚠️'} Your reference file: ${k.matched} of ${k.reference} league games match`;
-      [...k.missing.map(x=>'missing on site: '+x),...k.differences,...k.extra.map(x=>'not in reference: '+x)].slice(0,8).forEach(x=>h+=`<div class="m">• ${esc(x)}</div>`)}
-    (is[t]||[]).slice(0,4).forEach(x=>h+=`<div class="m">⚠️ skipped: ${esc(x)}</div>`);h+='</div>'});
+    if(k.reference!==undefined){const d=[...k.missing.map(x=>'not on the site: '+x),...k.differences,...k.extra.map(x=>'only on the site: '+x)],pa=(k.past||[]).length;
+      h+=`<br>${d.length?'ℹ️':'✅'} Compared with your reference file: ${k.matched} of ${k.reference} identical`+(pa?`, ${pa} already played (no longer on the site's schedule)`:'')+(d.length?', the rest changed on the site:':'');
+      d.slice(0,15).forEach(x=>h+=`<div class="m">• ${esc(x)}</div>`)}
+    (is[t]||[]).slice(0,10).forEach(x=>h+=`<div class="m">⚠️ skipped: ${esc(x)}</div>`);h+='</div>'});
   b.innerHTML=h}
 function step(d){let{y,m}=cur;do{m+=d;if(m>11){m=0;y++}if(m<0){m=11;y--}}while(SUMMER(m));cur={y,m};render()}
 $('prev').onclick=()=>step(-1);$('next').onclick=()=>step(1);
