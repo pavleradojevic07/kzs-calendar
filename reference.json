@@ -1,0 +1,209 @@
+[
+ {
+  "date": "2026-09-26",
+  "comp": "2. SKL",
+  "round": 1,
+  "ha": "A",
+  "opp": "Branik",
+  "hall": "ŠD Lukna",
+  "time": "19:00"
+ },
+ {
+  "date": "2026-09-29",
+  "comp": "Pokal Spar",
+  "round": 1,
+  "ha": "A",
+  "opp": "Postojna",
+  "hall": "ŠC Postojna",
+  "time": ""
+ },
+ {
+  "date": "2026-10-03",
+  "comp": "2. SKL",
+  "round": 2,
+  "ha": "H",
+  "opp": "Leone Ajdovščina",
+  "hall": "ŠD Lucija",
+  "time": ""
+ },
+ {
+  "date": "2026-10-10",
+  "comp": "2. SKL",
+  "round": 3,
+  "ha": "A",
+  "opp": "Slovan",
+  "hall": "ŠD Kodeljevo",
+  "time": ""
+ },
+ {
+  "date": "2026-10-17",
+  "comp": "2. SKL",
+  "round": 4,
+  "ha": "H",
+  "opp": "Grosuplje",
+  "hall": "ŠD Lucija",
+  "time": ""
+ },
+ {
+  "date": "2026-10-24",
+  "comp": "2. SKL",
+  "round": 5,
+  "ha": "A",
+  "opp": "Celje",
+  "hall": "1. OŠ Celje",
+  "time": "19:00"
+ },
+ {
+  "date": "2026-10-31",
+  "comp": "2. SKL",
+  "round": 6,
+  "ha": "H",
+  "opp": "Terme Olimia Podčetrtek",
+  "hall": "ŠD Lucija",
+  "time": ""
+ },
+ {
+  "date": "2026-11-07",
+  "comp": "2. SKL",
+  "round": 7,
+  "ha": "A",
+  "opp": "Ježica",
+  "hall": "Ježica",
+  "time": ""
+ },
+ {
+  "date": "2026-11-14",
+  "comp": "2. SKL",
+  "round": 8,
+  "ha": "H",
+  "opp": "Konjice",
+  "hall": "ŠD Lucija",
+  "time": ""
+ },
+ {
+  "date": "2026-11-21",
+  "comp": "2. SKL",
+  "round": 9,
+  "ha": "A",
+  "opp": "LTH Castings",
+  "hall": "ŠD Poden",
+  "time": "20:00"
+ },
+ {
+  "date": "2026-12-05",
+  "comp": "2. SKL",
+  "round": 10,
+  "ha": "H",
+  "opp": "Hidria",
+  "hall": "ŠD Lucija",
+  "time": ""
+ },
+ {
+  "date": "2026-12-12",
+  "comp": "2. SKL",
+  "round": 11,
+  "ha": "A",
+  "opp": "Ipros Vrhnika",
+  "hall": "OŠ Antona Martina Slomška",
+  "time": "19:30"
+ },
+ {
+  "date": "2026-12-19",
+  "comp": "2. SKL",
+  "round": 12,
+  "ha": "H",
+  "opp": "Branik",
+  "hall": "ŠD Lucija",
+  "time": ""
+ },
+ {
+  "date": "2027-01-09",
+  "comp": "2. SKL",
+  "round": 13,
+  "ha": "A",
+  "opp": "Leone Ajdovščina",
+  "hall": "ŠC Police",
+  "time": ""
+ },
+ {
+  "date": "2027-01-16",
+  "comp": "2. SKL",
+  "round": 14,
+  "ha": "H",
+  "opp": "Slovan",
+  "hall": "ŠD Lucija",
+  "time": ""
+ },
+ {
+  "date": "2027-01-23",
+  "comp": "2. SKL",
+  "round": 15,
+  "ha": "A",
+  "opp": "Grosuplje",
+  "hall": "ŠD Brinje",
+  "time": ""
+ },
+ {
+  "date": "2027-01-26",
+  "comp": "2. SKL",
+  "round": 16,
+  "ha": "H",
+  "opp": "Celje",
+  "hall": "ŠD Lucija",
+  "time": ""
+ },
+ {
+  "date": "2027-01-30",
+  "comp": "2. SKL",
+  "round": 17,
+  "ha": "A",
+  "opp": "Terme Olimia Podčetrtek",
+  "hall": "ŠD Podčetrtek",
+  "time": ""
+ },
+ {
+  "date": "2027-02-06",
+  "comp": "2. SKL",
+  "round": 18,
+  "ha": "H",
+  "opp": "Ježica",
+  "hall": "ŠD Lucija",
+  "time": ""
+ },
+ {
+  "date": "2027-02-13",
+  "comp": "2. SKL",
+  "round": 19,
+  "ha": "A",
+  "opp": "Konjice",
+  "hall": "ŠD Slovenske Konjice",
+  "time": ""
+ },
+ {
+  "date": "2027-02-20",
+  "comp": "2. SKL",
+  "round": 20,
+  "ha": "H",
+  "opp": "LTH Castings",
+  "hall": "ŠD Lucija",
+  "time": ""
+ },
+ {
+  "date": "2027-03-06",
+  "comp": "2. SKL",
+  "round": 21,
+  "ha": "A",
+  "opp": "Hidria",
+  "hall": "Modra dvorana",
+  "time": "18:00"
+ },
+ {
+  "date": "2027-03-13",
+  "comp": "2. SKL",
+  "round": 22,
+  "ha": "H",
+  "opp": "Ipros Vrhnika",
+  "hall": "ŠD Lucija",
+  "time": ""
+ }
+]
