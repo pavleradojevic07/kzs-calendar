@@ -1,4 +1,5 @@
 import json, re, os, hashlib, unicodedata, threading, datetime as dt
+from contextlib import contextmanager
 from flask import Flask, jsonify, send_from_directory, Response
 from playwright.sync_api import sync_playwright
 
@@ -12,6 +13,9 @@ TEAMS = {
     "U20": {"url": "https://www.kzs.si/ekipa/18612?tekmovanje=624&tab=tekme", "comp": ""},
 }
 FIELDS = ["date", "time", "score", "hall", "ha"]
+# kzs.si turns the kick-off into the BROWSER's timezone. A server browser runs in UTC, which made every game 1-2 h early
+# (and no-time games the day before). The browser must behave like one in Slovenia.
+TZ = "Europe/Ljubljana"
 LOCK = threading.Lock()
 
 # ---------- small helpers ----------
@@ -73,6 +77,15 @@ LINE_TIME = re.compile(r"^\d{1,2}[.:]\d{2}$")
 LINE_ROUND = re.compile(r"^\d+\.\s*kolo$", re.IGNORECASE)
 SPONSOR = re.compile(r"^(?:Platinasti sponzor(?:ji)?|Generalni sponzor|Zlati sponzorji|"
                      r"Srebrni sponzorji|Bronasti sponzorji)$", re.IGNORECASE)
+
+@contextmanager
+def browser_page():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            yield browser.new_context(timezone_id=TZ, locale="sl-SI").new_page()
+        finally:
+            browser.close()
 
 def fetch_text(page, url):
     page.goto(url, wait_until="domcontentloaded", timeout=60000)
@@ -139,25 +152,31 @@ def load_reference():
         with open(REFERENCE, encoding="utf-8") as f: return json.load(f)
     except (OSError, ValueError): return []
 
-def check(team, games):
+def check(team, games, today=None):
+    """Compare the scraped games with reference.json. Information only: the website is always the source of truth."""
     res = {"count": len(games), "home": sum(g["ha"] == "H" for g in games), "away": sum(g["ha"] == "A" for g in games)}
     comp = TEAMS[team]["comp"]
     ref = [r for r in load_reference() if comp and norm(r["comp"]) == norm(comp)]
     if not ref: return res
-    site = {(g["date"], norm(g["opp"])): g for g in games if norm(g["comp"]) == norm(comp)}
-    matched, diffs, missing = 0, [], []
+    today = today or dt.date.today().isoformat()
+    site = [g for g in games if norm(g["comp"]) == norm(comp)]
+    by_round = {g["round"]: g for g in site if g["round"]}
+    used, matched, diffs, missing, past = set(), 0, [], [], []
     for r in ref:
         label = f"{r['date']} {'vs' if r['ha'] == 'H' else '@'} {r['opp']}"
-        g = site.pop((r["date"], norm(r["opp"])), None)
-        if not g: missing.append(label); continue
-        d = []
+        g = by_round.get(str(r["round"])) or next((x for x in site if x["date"] == r["date"] and norm(x["opp"]) == norm(r["opp"])), None)
+        if not g:
+            (past if r["date"] < today else missing).append(f"round {r['round']}: {label}"); continue
+        used.add(g["key"]); d = []
+        if norm(g["opp"]) != norm(r["opp"]): d.append(f"opponent is {g['opp']} on site")
+        if g["date"] != r["date"]: d.append(f"moved to {g['date']}")
         if g["ha"] != r["ha"]: d.append(f"home/away is {g['ha']} on site, {r['ha']} in reference")
         if r["time"] and g["time"] != r["time"]: d.append(f"time is {g['time'] or '–'} on site, {r['time']} in reference")
-        if r["hall"] and norm(g["hall"]) != norm(r["hall"]): d.append(f"hall is '{g['hall'] or '–'}' on site, '{r['hall']}' in reference")
-        if d: diffs.append(f"{label}: " + "; ".join(d))
+        if r["hall"] and norm(g["hall"]) != norm(r["hall"]): d.append(f"hall is '{g['hall'] or '–'}' on site")
+        if d: diffs.append(f"round {r['round']}: {label}: " + "; ".join(d))
         else: matched += 1
-    extra = [f"{g['date']} {'vs' if g['ha'] == 'H' else '@'} {g['opp']}" for g in site.values()]
-    res.update(reference=len(ref), matched=matched, differences=diffs, missing=missing, extra=extra)
+    extra = [f"round {g['round']}: {g['date']} {'vs' if g['ha'] == 'H' else '@'} {g['opp']}" for g in site if g["key"] not in used]
+    res.update(reference=len(ref), matched=matched, differences=diffs, missing=missing, past=past, extra=extra)
     return res
 
 # ---------- storage + refresh ----------
@@ -187,25 +206,24 @@ def refresh():
         old = state.get("games", [])
         fresh, errors = {}, []
         checks, issues = dict(state.get("checks") or {}), dict(state.get("issues") or {})
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
-            try:
-                page = browser.new_page()
-                for team, cfg in TEAMS.items():
-                    iss = []
-                    try:
-                        gs = from_text(team, fetch_text(page, cfg["url"]), iss)
-                        if not gs: raise ValueError("no games found" + (f" ({iss[0]})" if iss else ""))
-                        fresh[team] = number(gs); checks[team] = check(team, fresh[team]); issues[team] = iss
-                    except Exception as exc:
-                        errors.append(f"{team}: {exc}")
-            finally:
-                browser.close()
+        with browser_page() as page:
+            for team, cfg in TEAMS.items():
+                iss = []
+                try:
+                    gs = from_text(team, fetch_text(page, cfg["url"]), iss)
+                    if not gs: raise ValueError("no games found" + (f" ({iss[0]})" if iss else ""))
+                    fresh[team] = number(gs); checks[team] = check(team, fresh[team]); issues[team] = iss
+                except Exception as exc:
+                    errors.append(f"{team}: {exc}")
         if not fresh: return {"error": "; ".join(errors) or "nothing could be loaded"}
-        # a team that failed keeps its previous games and is not reported as 'removed'
-        added, removed, changed = diff([g for g in old if g["team"] in fresh], [g for g in sum(fresh.values(), [])])
-        kept = [g for g in old if g["team"] not in fresh]
-        state.update(games=number(kept + sum(fresh.values(), [])), checks=checks, issues=issues,
+        new = sum(fresh.values(), [])
+        new_keys, today = {g["key"] for g in new}, dt.date.today().isoformat()
+        # the schedule page only lists upcoming games: a game that was known, is now gone and lies in the past was played -> keep it
+        played = [g for g in old if g["team"] in fresh and g["key"] not in new_keys and g["date"] < today]
+        pk = {g["key"] for g in played}
+        added, removed, changed = diff([g for g in old if g["team"] in fresh and g["key"] not in pk], new)
+        kept = [g for g in old if g["team"] not in fresh]  # a team that failed keeps its previous games
+        state.update(games=number(kept + played + new), checks=checks, issues=issues,
                      last_refresh=dt.datetime.now(dt.timezone.utc).isoformat(),
                      last_changes={"first_run": not old, "added": added, "removed": removed, "changed": changed, "errors": errors})
         save(state)
@@ -256,6 +274,20 @@ def api_refresh():
     try: res = refresh()
     except Exception as exc: return jsonify({"error": str(exc)}), 500
     return (jsonify(res), 502) if "error" in res else jsonify(res)
+
+@app.get("/api/debug")
+def api_debug():
+    """What the scraper's browser actually sees (timezone + the schedule lines) - for troubleshooting."""
+    out = {}
+    with LOCK, browser_page() as page:
+        for team, cfg in TEAMS.items():
+            try:
+                text = fetch_text(page, cfg["url"])
+                out[team] = {"browser_timezone": page.evaluate("Intl.DateTimeFormat().resolvedOptions().timeZone"),
+                             "schedule_lines": page_lines(text)[:400]}
+            except Exception as exc:
+                out[team] = {"error": str(exc)}
+    return jsonify(out)
 
 @app.get("/calendar.ics")
 def calendar_ics():
