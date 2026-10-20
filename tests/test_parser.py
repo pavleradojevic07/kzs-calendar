@@ -1,4 +1,5 @@
-"""Run: python tests/test_parser.py   (no browser needed). Builds fake KZS pages from reference.json in 3 layouts."""
+"""Run: python tests/test_parser.py   (no browser needed). Builds fake KZS pages from reference.json in the layout
+that kzs-calendar.py reads:  'Razpored' / date / competition / hall / 'N. kolo' / host / [time] / guest / ... / sponsor heading."""
 import json, os, sys, types
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 sys.modules.setdefault("playwright", types.ModuleType("playwright"))
@@ -9,38 +10,49 @@ REF = [r for r in json.load(open(os.path.join(app.HERE, "reference.json"), encod
 def pair(r): return ("Portorož", r["opp"]) if r["ha"] == "H" else (r["opp"], "Portorož")
 def sl(d): y, mo, da = d.split("-"); return f"{int(da)}. {int(mo)}. {y}"
 
-# layout 1: table rows (Domov | Čas/Rezultat | Gost | Igrišče), with "N. KROG" headings
-items = []
-for r in REF:
-    h, a = pair(r); items.append({"h": f"{r['round']}. KROG"})
-    items.append({"r": ["Datum", "Domov", "Čas/Rezultat", "Gost", "Igrišče-dvorana"]})
-    items.append({"r": [f"{r['date']} 19:00:00{sl(r['date'])}", h, r["time"] or "19:00", a, r["hall"]]})
-# layout 2: plain text lines  date / home / time / away / hall
-text = "\n".join(f"{r['round']}. kolo\nsob., {sl(r['date'])}\n{pair(r)[0]}\n{r['time'] or '19:00'}\n{pair(r)[1]}\n{r['hall']}" for r in REF)
-# layout 3: JSON api style
-blobs = [{"url": "x", "json": {"data": [{"round": r["round"], "date": r["date"] + "T19:00:00", "homeTeam": {"name": pair(r)[0]}, "awayTeam": {"name": pair(r)[1]}, "hall": {"name": r["hall"]}} for r in REF]}}]
+def row(date, comp, hall, rnd, host, guest, mid=None):
+    return "\n".join([sl(date), comp, hall, f"{rnd}. kolo", host] + ([mid] if mid else []) + [guest])
 
-# layout 4 (the REAL kzs.si layout from your error message): home / away / date / competition / hall / "N. kolo"
-text2 = "Tekme\nLestvica\n" + "\n".join(f"{pair(r)[0]}\n{pair(r)[1]}\n{sl(r['date'])}\n2. SKL\n{r['hall']}\n{r['round']}. kolo" for r in REF)
+# every other game gets a time written as 19.00, the rest have none (page shows only host + guest)
+rows = [row(r["date"], "2. SKL", r["hall"], r["round"], *pair(r), mid=(r["time"].replace(":", ".") if r["time"] else None)) for r in REF]
+page = ("Meni\nPokal Spar\nRazpored\n" + "\n".join(rows) + "\nGeneralni sponzor\n1. 1. 2030\n2. SKL\nFake\n99. kolo\nA\nB")
+
 fails = 0
 def ok(cond, msg):
     global fails; fails += (not cond); print(("PASS " if cond else "FAIL ") + msg)
 
-for name, fn, arg in (("table", app.from_items, items), ("json", app.from_json, blobs), ("real-layout", app.from_text, text2)):
-    iss = []; gs = app.number(fn("Senior", arg, iss)); c = app.check("Senior", gs)
-    ok(len(gs) == 22 and c["matched"] == 22 and not c["missing"], f"{name}: 22/22 games match the reference ({c.get('matched')}/{c.get('reference')})")
-    ok(all(not app.is_focus(g["opp"]) for g in gs), f"{name}: opponent is never Portorož")
-    ok(all((g["ha"] == "H") == app.is_focus(g["home"]) for g in gs), f"{name}: home = first-listed team, Portorož home => H")
-    ok(sum(g["ha"] == "H" for g in gs) == 11, f"{name}: 11 home / 11 away")
-    ok(not iss, f"{name}: no rejected rows")
+iss = []; gs = app.number(app.from_text("Senior", page, iss)); c = app.check("Senior", gs)
+ok(len(gs) == 22 and c["matched"] == 22 and not c["missing"] and not c["differences"], f"22/22 games match the reference ({c.get('matched')}/{c.get('reference')})")
+ok(all(not app.is_focus(g["opp"]) for g in gs), "opponent is never Portorož")
+ok(all((g["ha"] == "H") == app.is_focus(g["home"]) for g in gs), "home = first-listed team, Portorož home => H")
+ok(sum(g["ha"] == "H" for g in gs) == 11, "11 home / 11 away")
+ok(not iss, "no rejected rows")
+ok(len({g["key"] for g in gs}) == 22, "every game has a unique key")
+ok(all(g["comp"] == "2. SKL" and g["round"] for g in gs), "competition and round are read from each game row")
+ok(all(g["time"] == next(r["time"] for r in REF if r["date"] == g["date"]) for g in gs if g["time"]), "times like 19.00 become 19:00")
+ok(len(gs) == 22, "text before 'Razpored' and after the sponsor heading is ignored")
 
 iss = []
-gs = app.from_text("Senior", "Celje\nPortorož\n24. 10. 2026\n2. SKL\n1. OŠ Celje\n5. kolo\nPortorož\nTerme Olimia Podčetrtek\n30. 10. 2026\n2. SKL\nŠD Lucija\n6. kolo", iss)
-ok(len(gs) == 2 and gs[0]["ha"] == "A" and gs[0]["opp"] == "Celje" and gs[0]["round"] == "5" and gs[0]["hall"] == "1. OŠ Celje" and gs[0]["comp"] == "2. SKL", "your Oct 24 game: AWAY @ Celje, 1. OŠ Celje, 2. SKL, round 5")
-ok(gs[1]["ha"] == "H" and gs[1]["opp"] == "Terme Olimia Podčetrtek" and gs[1]["date"] == "2026-10-30", "your Oct 30 game: HOME vs Terme Olimia")
-gs = app.from_text("U20", "Portorož\nKoper\n25. 10. 2026\nFantje U20 1.B SKL\nŠD Lucija\n4. kolo", [])
+gs = app.from_text("Senior", "Razpored\n24. 10. 2026\n2. SKL\n1. OŠ Celje\n5. kolo\nCelje\n19.00\nPortorož\n"
+                   "31. 10. 2026\n2. SKL\nŠD Lucija\n6. kolo\nPortorož\nTerme Olimia Podčetrtek", iss)
+ok(len(gs) == 2 and gs[0]["ha"] == "A" and gs[0]["opp"] == "Celje" and gs[0]["round"] == "5" and gs[0]["hall"] == "1. OŠ Celje"
+   and gs[0]["comp"] == "2. SKL" and gs[0]["time"] == "19:00", "your Oct 24 game: AWAY @ Celje, 1. OŠ Celje, 2. SKL, round 5, 19:00")
+ok(gs[1]["ha"] == "H" and gs[1]["opp"] == "Terme Olimia Podčetrtek" and gs[1]["date"] == "2026-10-31" and gs[1]["time"] == "", "your Oct 31 game: HOME vs Terme Olimia, no time yet")
+
+gs = app.from_text("U20", "Razpored\n25. 10. 2026\nFantje U20 1.B SKL\nŠD Lucija\n4. kolo\nPortorož\nKoper", [])
 ok(len(gs) == 1 and gs[0]["comp"] == "Fantje U20 1.B SKL" and gs[0]["ha"] == "H", "U20 competition name is read from the game row")
-sw = app.number([dict(g, ha="A" if g["ha"] == "H" else "H") for g in app.number(app.from_text("Senior", text2, []))])
+
+for label, mid in (("78:68", "78:68"), ("78 - 68", "78 - 68")):
+    gs = app.from_text("Senior", row("2026-09-20", "2. SKL", "ŠD Lucija", 1, "Portorož", "Celje", mid).join(["Razpored\n", ""]), [])
+    ok(len(gs) == 1 and gs[0]["score"] == "78:68" and gs[0]["time"] == "", f"finished game with score '{label}'")
+
+iss = []
+gs = app.from_text("Senior", "Razpored\n24. 10. 2026\n2. SKL\n1. OŠ Celje\nCelje\nPortorož", iss)
+ok(gs == [] and len(iss) == 1, "a block without a round is reported, not guessed")
+try: app.from_text("Senior", "Nothing here", []); ok(False, "missing 'Razpored' raises")
+except ValueError: ok(True, "missing 'Razpored' raises")
+
+sw = app.number([dict(g, ha="A" if g["ha"] == "H" else "H") for g in app.number(app.from_text("Senior", page, []))])
 ok(len(app.check("Senior", sw)["differences"]) >= 20, "reversed home/away is reported clearly by the reference check")
 g = app.build("Senior", "1", "2026-09-26", "", "Portorož", "Celje", "", "", [])
 ok(g["ha"] == "H" and g["opp"] == "Celje", "Portorož–Celje is HOME vs Celje")
@@ -49,4 +61,6 @@ ok(g["ha"] == "A" and g["opp"] == "Slovan", "Slovan–Portorož is AWAY, opponen
 iss = []; ok(app.build("Senior", "1", "2026-09-26", "", "Slovan", "Celje", "", "", iss) is None and iss, "game without Portorož is rejected, not shown")
 ok(app.build("Senior", "1", "2026-09-26", "", "KK Portoroz", "Portorož 2", "", "", []) is None, "both sides Portorož is rejected")
 ok(app.get_score("78 - 68") == "78:68" and app.get_score("19:00") == "" and app.get_time("2026-09-26 00:00:00") == "", "score / time / midnight parsing")
+ics = app.make_ics(app.number(app.from_text("Senior", page, [])))
+ok(ics.count("BEGIN:VEVENT") == 22 and "LOCATION:ŠD Lucija" in ics, ".ics export has all 22 events")
 print("\nALL PASSED" if not fails else f"\n{fails} FAILED"); sys.exit(bool(fails))
