@@ -56,7 +56,7 @@ def round_of(s):
     w = n.split()
     return str(ORD[w[0]]) if len(w) >= 2 and w[0] in ORD and w[1] in ("kolo", "krog") else None
 
-def build(team, rnd, date, time, home, away, score, hall, issues):
+def build(team, rnd, date, time, home, away, score, hall, issues, comp=None):
     """The ONLY place a game is created. Home = first-listed (Domov) team. Portorož must be exactly one side."""
     home, away = clean(home), clean(away)
     if not date or not home or not away:
@@ -64,7 +64,7 @@ def build(team, rnd, date, time, home, away, score, hall, issues):
     if is_focus(home) == is_focus(away):
         issues.append(f"{date}: '{home} – {away}' skipped (Portorož must be exactly one of the two teams)"); return None
     ha = "H" if is_focus(home) else "A"
-    return {"team": team, "comp": TEAMS[team]["comp"], "round": rnd or "", "date": date, "time": time,
+    return {"team": team, "comp": clean(comp) or TEAMS[team]["comp"], "round": rnd or "", "date": date, "time": time,
             "home": home, "away": away, "ha": ha, "opp": away if ha == "H" else home,
             "title": f"{home} – {away}", "score": score, "hall": clean(hall)}
 
@@ -122,25 +122,35 @@ def from_json(team, blobs, issues):
     for b in blobs: walk(b["json"])
     return out
 
+SEP = re.compile(r"^(vs\.?|@|-|–|:|domov|gost|home|away)$", re.I)
+COMPLINE = re.compile(r"skl|lig|pokal|prvenstvo")
+
 def from_text(team, text, issues):
+    """Layout seen on kzs.si: [home, (score/time), away,] date, competition, hall, 'N. kolo'  -> teams sit BEFORE the date line."""
     lines = [l.strip() for l in text.splitlines() if l.strip()]
-    out, rnd, i = [], None, 0
-    starts = [k for k, l in enumerate(lines) if get_date(l)]
-    for n, s in enumerate(starts):
-        for l in lines[(starts[n-1] if n else 0):s]:
-            rnd = round_of(l) or rnd
-        end = starts[n+1] if n+1 < len(starts) else len(lines)
-        blk = lines[s:end][:8]; body = blk[1:]
-        mi = next((k for k, l in enumerate(body) if get_score(l) or (TIME.fullmatch(l) is not None)), None)
-        if mi is not None and 1 <= mi and mi + 1 < len(body):
-            home, away, hall = body[mi-1], body[mi+1], (body[mi+2] if mi + 2 < len(body) else "")
-            mid = body[mi]
-        else:
-            sep = next((l for l in body if re.search(r"\s[-–]\s", l) and not get_score(l)), None)
-            if not sep: issues.append(f"{get_date(blk[0])}: could not read teams from {blk[:4]}"); continue
-            home, away = re.split(r"\s+[-–]\s+", sep, maxsplit=1); mid = " ".join(body)
-            hall = next((l for l in body if l != sep and not TIME.fullmatch(l) and not get_score(l)), "")
-        g = build(team, rnd, get_date(blk[0]), get_time(blk[0]) or get_time(mid), home, away, get_score(mid), hall, issues)
+    marks = [k for k, l in enumerate(lines) if round_of(l)]
+    ds = [k for k, l in enumerate(lines) if get_date(l)]
+    out = []
+    for n, s in enumerate(ds):
+        nxt = ds[n+1] if n + 1 < len(ds) else len(lines)
+        prev_m = max([k for k in marks if k < s], default=-1)
+        end = next((k for k in marks if k > s), None)
+        if end is not None and end >= nxt: end = None
+        post = [l for l in lines[s+1:(end if end is not None else min(s+4, nxt))] if not TIME.fullmatch(l)]
+        times = [l for l in lines[s+1:(end if end is not None else min(s+4, nxt))] if TIME.fullmatch(l)]
+        pre = lines[max(prev_m + 1, (ds[n-1] + 1) if n else 0, s - 6):s]
+        time, score, cand = get_time(lines[s]), "", []
+        for l in pre:
+            if TIME.fullmatch(l): time = time or get_time(l)
+            elif get_score(l): score = get_score(l)
+            elif not SEP.match(l): cand.append(l)
+        if len(cand) == 1 and re.search(r"\s[-–:]\s", cand[0]): cand = re.split(r"\s+[-–:]\s+", cand[0], maxsplit=1)
+        if len(cand) < 2:
+            issues.append(f"{get_date(lines[s])}: teams not found; lines before the date: {pre[-4:]}; after: {post[:4]}"); continue
+        comp, hall = (post[0] if post else ""), (post[1] if len(post) > 1 else "")
+        if post and not COMPLINE.search(norm(post[0])): comp, hall = "", post[0]
+        g = build(team, round_of(lines[end]) if end is not None else None, get_date(lines[s]),
+                  time or (get_time(times[0]) if times else ""), cand[-2], cand[-1], score, hall, issues, comp)
         if g: out.append(g)
     return out
 
@@ -170,6 +180,9 @@ def check(team, games):
     used, missing, diffs = set(), [], []
     for r in ref:
         c = [g for g in games if g["key"] not in used and g["ha"] == r["ha"] and similar(g["opp"], r["opp"])]
+        if not c:
+            sw = [g for g in games if g["key"] not in used and g["ha"] != r["ha"] and similar(g["opp"], r["opp"]) and g["date"] == r["date"]]
+            if sw: used.add(sw[0]["key"]); diffs.append(f"{r['opp']} ({r['date']}): site says {'HOME' if sw[0]['ha']=='H' else 'AWAY'}, reference says {'HOME' if r['ha']=='H' else 'AWAY'}"); continue
         if not c: missing.append(f"round {r['round']}: {'vs' if r['ha']=='H' else '@'} {r['opp']} ({r['date']})"); continue
         g = c[0]; used.add(g["key"])
         if g["date"] != r["date"]: diffs.append(f"{g['opp']}: date site {g['date']} vs reference {r['date']}")
