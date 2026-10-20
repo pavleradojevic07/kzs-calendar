@@ -61,6 +61,17 @@ ok(g["ha"] == "A" and g["opp"] == "Slovan", "Slovan–Portorož is AWAY, opponen
 iss = []; ok(app.build("Senior", "1", "2026-09-26", "", "Slovan", "Celje", "", "", iss) is None and iss, "game without Portorož is rejected, not shown")
 ok(app.build("Senior", "1", "2026-09-26", "", "KK Portoroz", "Portorož 2", "", "", []) is None, "both sides Portorož is rejected")
 ok(app.get_score("78 - 68") == "78:68" and app.get_score("19:00") == "" and app.get_time("2026-09-26 00:00:00") == "", "score / time / midnight parsing")
+# the site moved the Oct 31 game to Oct 30 (as in your real page) -> reported as moved, not as "missing on site"
+moved = page.replace(sl("2026-10-31"), sl("2026-10-30"))
+c = app.check("Senior", app.number(app.from_text("Senior", moved, [])), today="2026-10-20")
+ok(not c["missing"] and not c["extra"] and len(c["differences"]) == 1 and "moved to 2026-10-30" in c["differences"][0], "a game moved by the league is a 'moved' difference, not missing")
+# the page only lists upcoming games: rounds 1-4 (already played) are 'past', not 'missing'
+upcoming = "Razpored\n" + "\n".join(rows[4:]) + "\nGeneralni sponzor"
+c = app.check("Senior", app.number(app.from_text("Senior", upcoming, [])), today="2026-10-20")
+ok(len(c["past"]) == 4 and not c["missing"] and not c["extra"] and c["matched"] == 18, "played games no longer on the schedule are 'past', not 'missing'")
+c = app.check("Senior", app.number(app.from_text("Senior", upcoming, [])), today="2026-09-01")
+ok(len(c["missing"]) == 4, "...but the same games would be 'missing' if they were still in the future")
+ok(app.TZ == "Europe/Ljubljana", "scraper browser is set to Slovenian time")
 ics = app.make_ics(app.number(app.from_text("Senior", page, [])))
 ok(ics.count("BEGIN:VEVENT") == 22 and "LOCATION:ŠD Lucija" in ics, ".ics export has all 22 events")
 print("\nALL PASSED" if not fails else f"\n{fails} FAILED"); sys.exit(bool(fails))
