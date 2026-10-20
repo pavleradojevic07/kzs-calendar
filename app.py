@@ -12,6 +12,8 @@ DATE = re.compile(r"(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})")
 TIME = re.compile(r"\b([01]?\d|2[0-3]):([0-5]\d)\b")
 SCORE = re.compile(r"\b(\d{2,3})\s*[:\-–]\s*(\d{2,3})\b")
 FIELDS = ["date", "time", "score", "details"]
+FOCUS = re.compile(r"portoro[žz]", re.I)          # focus team: Portorož
+VENUE = re.compile(r"dvoran|športn|sportn|hala|center|\bOŠ\b|šola", re.I)
 
 def load():
     try:
@@ -61,11 +63,18 @@ def parse(team, text):
         s = SCORE.search(rest)
         score = f"{s.group(1)}:{s.group(2)}" if s else ""
         title = next((x for x in blk if re.search(r"\s[-–:]\s", DATE.sub("", x)) and not DATE.fullmatch(x)), blk[-1])
-        title = re.sub(r"\s+", " ", TIME.sub("", DATE.sub("", title))).strip(" -|,")
+        title = re.sub(r"\s+", " ", SCORE.sub("", TIME.sub("", DATE.sub("", title)))).strip(" -|,")
+        parts = re.split(r"\s+[-–:]\s+", title, maxsplit=1)
+        ha, opp = "", title
+        if len(parts) == 2:
+            if FOCUS.search(parts[0]): ha, opp = "H", parts[1]
+            elif FOCUS.search(parts[1]): ha, opp = "A", parts[0]
+        venue = next((x for x in blk[1:] if VENUE.search(x)), "")
         base = f"{team}|{title}"
         seen[base] = seen.get(base, 0) + 1
         games.append({"key": f"{base}|{seen[base]}", "team": team, "title": title,
-                      "date": date, "time": time, "score": score, "details": joined})
+                      "date": date, "time": time, "score": score, "details": joined,
+                      "ha": ha, "opp": opp.strip(), "venue": venue})
     return games
 
 def diff(old, new):
@@ -128,7 +137,8 @@ def ics():
         ev += ["BEGIN:VEVENT", f"UID:{abs(hash(g['key']))}@kzs-calendar",
                f"DTSTAMP:{dt.datetime.utcnow():%Y%m%dT%H%M%SZ}",
                f"DTSTART;TZID=Europe/Ljubljana:{stamp(g)}", f"DTEND;TZID=Europe/Ljubljana:{stamp(g, 2)}",
-               f"SUMMARY:[{g['team']}] {g['title']}" + (f" ({g['score']})" if g["score"] else ""),
+               f"SUMMARY:[{'Člani' if g['team']=='Senior' else 'U20'}] {g['title']}" + (f" ({g['score']})" if g["score"] else ""),
+               f"LOCATION:{g.get('venue') or ('Portorož' if g.get('ha')=='H' else g.get('opp',''))}",
                "END:VEVENT"]
     body = "\r\n".join(["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//kzs-calendar//EN"] + ev + ["END:VCALENDAR"])
     return Response(body, mimetype="text/calendar",
