@@ -4,7 +4,7 @@
 <title>Portorož basketball</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#10203a;--bg:#e9edf3;--line:#c9d1dd;--mut:#566478;--home:#d9480f;--away:#1c4e9e;--unk:#6b7585;--yel:#ffd23f}
+:root{--ink:#10203a;--bg:#e9edf3;--line:#c9d1dd;--mut:#566478;--home:#1f8a4c;--away:#1c4e9e;--unk:#6b7585;--yel:#ffd23f}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,sans-serif;padding-bottom:40px}
 header{background:var(--ink);color:#fff;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 h1{font:700 26px 'Barlow Condensed',sans-serif;margin:0}small{color:#a9b9d0}
@@ -12,7 +12,7 @@ button,a.btn{font:inherit;border:0;border-radius:10px;padding:11px 15px;backgrou
 button.alt,a.btn.alt{background:#fff;color:var(--ink);border:2px solid var(--line)}button:disabled{opacity:.6}
 main{max-width:1000px;margin:0 auto;padding:10px}
 .box{background:#fff;border:2px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
-.box h2{margin:0 0 4px;font:700 20px 'Barlow Condensed'}.hl{border-color:var(--home);background:#fff4ec}
+.box h2{margin:0 0 4px;font:700 20px 'Barlow Condensed',system-ui,sans-serif}.hl{border-color:#e0a800;background:#fff8e1}
 li{margin:4px 0}.old{text-decoration:line-through;color:var(--mut)}.m{color:var(--mut);font-size:14px}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
 .chip{padding:8px 14px;border-radius:99px;background:#fff;border:2px solid var(--line);font-weight:600;font-size:14px;cursor:pointer}
@@ -20,32 +20,31 @@ li{margin:4px 0}.old{text-decoration:line-through;color:var(--mut)}.m{color:var(
 .leg{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;margin:6px 0 10px;align-items:center;font-weight:600}
 .sw{display:inline-block;padding:2px 8px;border-radius:6px;color:#fff;margin-right:4px}
 .nav{display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:4;background:var(--bg);padding:8px 0}
-.nav h2{flex:1;text-align:center;margin:0;font:700 30px 'Barlow Condensed'}
+.nav h2{flex:1;text-align:center;margin:0;font:700 30px 'Barlow Condensed',system-ui,sans-serif}
 .nav button{font-size:22px;padding:8px 18px}
 #gw{overflow-x:auto;background:#fff;border:2px solid var(--line);border-radius:12px;padding:6px}
 .grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
-.big .grid{min-width:900px}
-.dow{font:700 15px 'Barlow Condensed';text-transform:uppercase;text-align:center;color:var(--mut);padding:4px 0}
+.big .grid{min-width:780px}
+.dow{font:700 15px 'Barlow Condensed',system-ui,sans-serif;text-transform:uppercase;text-align:center;color:var(--mut);padding:4px 0}
 .c{border:1px solid var(--line);border-radius:8px;background:#fafbfd;padding:3px;display:flex;flex-direction:column;gap:3px;min-width:0;min-height:96px}
 .big .c{min-height:170px}.c.blank{background:none;border:0}.c.we{background:#f1f4f9}
-.n{font:700 15px 'Barlow Condensed';color:var(--mut);padding:0 3px}.c.today{border:3px solid var(--ink)}.c.today .n{color:var(--ink)}
+.n{font:700 15px 'Barlow Condensed',system-ui,sans-serif;color:var(--mut);padding:0 3px}.c.today{border:3px solid var(--ink)}.c.today .n{color:var(--ink)}
 .gs{flex:1;display:flex;flex-direction:column;gap:3px}
-.b{flex:1;border-radius:6px;color:#fff;padding:4px 5px;font-size:12px;line-height:1.25;position:relative;cursor:pointer;min-width:0;overflow:hidden}
+.b{flex:none;border-radius:6px;color:#fff;padding:5px 6px;font-size:12px;line-height:1.3;position:relative;cursor:pointer;min-width:0}
 .b.H{background:var(--home)}.b.A{background:var(--away)}.b.X{background:var(--unk)}
 .r1{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:14px}
-.pill{display:inline-block;font:700 12px 'Barlow Condensed';letter-spacing:.6px;padding:1px 7px;border-radius:4px;margin:2px 0}
+.pill{display:inline-block;font:700 12px 'Barlow Condensed',system-ui,sans-serif;letter-spacing:.6px;padding:1px 7px;border-radius:4px;margin:2px 0}
 .pill.S{background:#fff;color:var(--ink)}.pill.U{background:var(--yel);color:#10203a}
 .op{font-weight:800;font-size:14px;word-break:break-word}
 .det{margin-top:2px;font-size:11.5px;opacity:.95}.fit .det{display:none}
 .sc{font-weight:800;margin-top:2px}
-.b.new:after{content:'NEW';position:absolute;top:3px;right:3px;font:700 10px sans-serif;background:var(--yel);color:#10203a;border-radius:4px;padding:0 4px;display:none}
-.b.new .r1:after{content:'●';color:var(--yel);margin-left:4px}
+.b.new{box-shadow:0 0 0 3px var(--yel),0 0 0 5px var(--ink)}
 .ag{display:flex;gap:10px;background:#fff;border:2px solid var(--line);border-left:10px solid;border-radius:10px;padding:8px 10px;margin:6px 0;cursor:pointer}
 .ag.H{border-left-color:var(--home)}.ag.A{border-left-color:var(--away)}.ag.X{border-left-color:var(--unk)}
-.ag .d{min-width:54px;text-align:center;font:700 14px 'Barlow Condensed';color:var(--mut);text-transform:uppercase}.ag .d b{display:block;font-size:30px;color:var(--ink);line-height:1}
+.ag .d{min-width:54px;text-align:center;font:700 14px 'Barlow Condensed',system-ui,sans-serif;color:var(--mut);text-transform:uppercase}.ag .d b{display:block;font-size:30px;color:var(--ink);line-height:1}
 .ag .pill{margin-right:4px}
 #sheet{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:4px solid var(--ink);padding:14px 16px 24px;display:none;z-index:9;box-shadow:0 -6px 20px #0004}
-#sheet h3{font:700 24px 'Barlow Condensed';margin:0}
+#sheet h3{font:700 24px 'Barlow Condensed',system-ui,sans-serif;margin:0}
 #toast{position:fixed;left:12px;right:12px;top:70px;background:var(--ink);color:#fff;padding:12px;border-radius:10px;display:none;z-index:10}
 .exp{display:flex;gap:8px;flex-wrap:wrap}
 </style></head><body>
@@ -53,6 +52,7 @@ li{margin:4px 0}.old{text-decoration:line-through;color:var(--mut)}.m{color:var(
 <div id="toast"></div>
 <main>
 <div id="changes" class="box" hidden></div>
+<div id="check" class="box" hidden></div>
 <div class="chips" id="chips"></div>
 <div class="leg"><span class="sw" style="background:var(--home)">🏠 HOME</span><span class="sw" style="background:var(--away)">✈️ AWAY</span><span><span class="pill S" style="border:1px solid var(--ink)">ČLANI</span> senior</span><span><span class="pill U">U20</span> youth</span></div>
 <div class="nav"><button class="alt" id="prev">‹</button><h2 id="mon"></h2><button class="alt" id="next">›</button></div>
@@ -78,8 +78,9 @@ const short=o=>(o||'').replace(/^(KK|ŽKK|KD|ŠD|BK)\s+/i,'');
 const ic=g=>g.ha==='H'?'🏠':g.ha==='A'?'✈️':'❔',hn=g=>g.ha==='H'?'HOME':g.ha==='A'?'AWAY':'?';
 const dfmt=(d,t)=>new Date(d+'T00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+(t?' · '+t:'');
 function result(g){if(!g.score||!g.ha)return null;const[a,b]=g.score.split(':').map(Number);const u=g.ha==='H'?a:b,t=g.ha==='H'?b:a;return u>t?'W':u<t?'L':'D'}
-const hall=g=>g.venue||(g.ha==='H'?'hall not listed':g.ha==='A'?'away hall not listed':'');
-const compLine=g=>[g.comp,g.round?'Round '+g.round:''].filter(Boolean).join(' · ')||'competition not listed';
+const hall=g=>g.hall||'';
+const compLine=g=>[g.comp,g.round?g.round+'. kolo':''].filter(Boolean).join(' • ');
+const nm=n=>/portoro[žz]/i.test(n)?`<b>${esc(n)}</b>`:esc(n);
 function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',5000)}
 function newKeys(){const c=S.last_changes;if(!c||c.first_run)return new Set();return new Set([...c.added.map(g=>g.key),...c.changed.map(x=>x.game.key)])}
 function renderChanges(){
@@ -98,10 +99,9 @@ function chips(){
   document.querySelectorAll('#chips .chip').forEach(e=>e.onclick=()=>{F[e.dataset.k]=e.dataset.v;render()})}
 function block(g){const r=result(g);
   return `<div class="b ${g.ha||'X'} ${newKeys().has(g.key)?'new':''}" data-i="${g.i}">
-  <div class="r1"><span>${ic(g)} ${hn(g)}</span><span>${g.time||'time TBA'}</span></div>
-  <span class="pill ${tCls(g.team)}">${tName(g.team)}</span>
-  <div class="op">${g.ha==='A'?'@ ':'vs '}${esc(short(g.opp))}</div>
-  <div class="det"><div>🏟 ${esc(hall(g))}</div><div>🏆 ${esc(compLine(g))}</div></div>
+  <div class="op">${ic(g)} ${g.ha==='A'?'@':'vs'} ${esc(short(g.opp))}</div>
+  <div><span class="pill ${tCls(g.team)}">${tName(g.team)}</span></div>${g.time?`<div style="font-weight:700">🕐 ${g.time}</div>`:''}
+  <div class="det">${g.hall?`<div>${esc(g.hall)}</div>`:''}${compLine(g)?`<div>${esc(compLine(g))}</div>`:''}</div>
   ${g.score?`<div class="sc">${r?r+' · ':''}${esc(g.score)}</div>`:''}</div>`}
 function render(){
   chips();$('zoom').textContent=big?'🔍 Big cells (details) ✓':'🔍 Compact cells';
@@ -115,10 +115,17 @@ function render(){
   $('gw').innerHTML=`<div class="grid" id="grid">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>`<div class="dow">${x}</div>`).join('')}${c}</div>`;
   const mg=all.filter(g=>g.date.startsWith(pre)).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
   $('stat').textContent=`${mg.length} game${mg.length===1?'':'s'} this month · ${mg.filter(g=>g.ha==='H').length} home · ${mg.filter(g=>g.ha==='A').length} away`;
-  $('ag').innerHTML=mg.map(g=>`<div class="ag ${g.ha||'X'}" data-i="${g.i}"><div class="d">${new Date(g.date+'T00:00').toLocaleDateString('en-GB',{weekday:'short'})}<b>${+g.date.slice(8)}</b></div><div><span class="pill ${tCls(g.team)}" style="border:1px solid #10203a55">${tName(g.team)}</span><b>${ic(g)} ${hn(g)} ${g.ha==='A'?'@':'vs'} ${esc(short(g.opp))}</b> · ${g.time||'time TBA'}<div class="m">🏟 ${esc(hall(g))} · 🏆 ${esc(compLine(g))}${g.score?' · <b>'+(result(g)||'')+' '+esc(g.score)+'</b>':''}</div></div></div>`).join('')||'<div class="m">No games this month.</div>';
+  $('ag').innerHTML=mg.map(g=>`<div class="ag ${g.ha||'X'}" data-i="${g.i}"><div class="d">${new Date(g.date+'T00:00').toLocaleDateString('en-GB',{weekday:'short'})}<b>${+g.date.slice(8)}</b></div><div><span class="pill ${tCls(g.team)}" style="border:1px solid #10203a55">${tName(g.team)}</span><b>${ic(g)} ${g.ha==='A'?'@':'vs'} ${esc(short(g.opp))}</b>${g.time?' · 🕐 '+g.time:''}<div class="m">${[hall(g),compLine(g)].filter(Boolean).map(esc).join(' · ')}${g.score?' · <b>'+(result(g)||'')+' '+esc(g.score)+'</b>':''}</div></div></div>`).join('')||'<div class="m">No games this month.</div>';
   document.querySelectorAll('.b,.ag').forEach(e=>e.onclick=()=>sheet(S.games[e.dataset.i]))}
 function sheet(g){const s=$('sheet'),r=result(g);
-  s.innerHTML=`<h3>${ic(g)} ${esc(g.title)}</h3><div><span class="pill ${tCls(g.team)}" style="border:1px solid #10203a55">${tName(g.team)}</span> <b>${hn(g)}</b>${r?` · <b>${{W:'Win',L:'Loss',D:'Draw'}[r]} ${esc(g.score)}</b>`:''}</div><div>${dfmt(g.date,g.time||'time TBA')}</div><div>🏟 ${esc(hall(g))}</div><div>🏆 ${esc(compLine(g))}</div><div>Opponent: ${esc(g.opp)}</div><div class="m" style="margin-top:6px">Source text: ${esc(g.details)}</div><button class="alt" style="margin-top:10px" onclick="this.parentNode.style.display='none'">Close</button>`;s.style.display='block'}
+  s.innerHTML=`<h3>${ic(g)} ${nm(g.home)} – ${nm(g.away)}</h3><div><span class="pill ${tCls(g.team)}" style="border:1px solid #10203a55">${tName(g.team)}</span> <b>${g.ha==='H'?'HOME game':'AWAY game'}</b>${r?` · <b>${{W:'Win',L:'Loss',D:'Draw'}[r]} ${esc(g.score)}</b>`:''}</div><div>${dfmt(g.date,g.time)}</div>${g.hall?`<div>🏟 ${esc(g.hall)}</div>`:''}${compLine(g)?`<div>🏆 ${esc(compLine(g))}</div>`:''}<div class="m">Home team is listed first.</div><button class="alt" style="margin-top:10px" onclick="this.parentNode.style.display='none'">Close</button>`;s.style.display='block'}
+function renderCheck(){const b=$('check'),c=S.checks||{},is=S.issues||{},ts=Object.keys(c);if(!ts.length){b.hidden=true;return}
+  b.hidden=false;let h='<h2>Data check</h2>';
+  ts.forEach(t=>{const k=c[t];h+=`<div style="margin-bottom:6px"><b>${tName(t)}</b>: ${k.count} games read (${k.home} home, ${k.away} away)`;
+    if(k.reference!==undefined){const good=k.matched===k.reference&&!k.differences.length&&!k.missing.length;h+=`<br>${good?'✅':'⚠️'} Your reference file: ${k.matched} of ${k.reference} league games match`;
+      [...k.missing.map(x=>'missing on site: '+x),...k.differences,...k.extra.map(x=>'not in reference: '+x)].slice(0,8).forEach(x=>h+=`<div class="m">• ${esc(x)}</div>`)}
+    (is[t]||[]).slice(0,4).forEach(x=>h+=`<div class="m">⚠️ skipped: ${esc(x)}</div>`);h+='</div>'});
+  b.innerHTML=h}
 function step(d){let{y,m}=cur;do{m+=d;if(m>11){m=0;y++}if(m<0){m=11;y--}}while(SUMMER(m));cur={y,m};render()}
 $('prev').onclick=()=>step(-1);$('next').onclick=()=>step(1);
 $('today').onclick=()=>{cur={y:now.getFullYear(),m:SUMMER(now.getMonth())?9:now.getMonth()};render()};
@@ -126,7 +133,7 @@ $('zoom').onclick=()=>{big=!big;render()};
 function load(s){S=s;$('last').textContent=s.last_refresh?'Updated '+new Date(s.last_refresh).toLocaleString('en-GB'):'Not refreshed yet';
   const hasCur=s.games.some(g=>g.date.startsWith(`${cur.y}-${pad(cur.m+1)}`));
   if(s.games.length&&!hasCur){const up=s.games.filter(g=>g.date>=today).sort((a,b)=>a.date.localeCompare(b.date))[0]||[...s.games].sort((a,b)=>b.date.localeCompare(a.date))[0];cur={y:+up.date.slice(0,4),m:+up.date.slice(5,7)-1}}
-  renderChanges();render()}
+  renderChanges();renderCheck();render()}
 $('go').onclick=async()=>{
   if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
   const b=$('go');b.disabled=true;b.textContent='Checking…';
